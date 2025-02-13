@@ -583,7 +583,8 @@ class renderer extends \core_courseformat\output\section_renderer {
 
             foreach ($modinfo->sections as $sectionno => $modnumbers) {
                 $section = course_get_format($course)->get_section($sectionno);
-                if (\format_designer\options::is_vaild_section_completed($section, $course, $modinfo, $realtiveactivities) == "true") {
+                if (\format_designer\options::is_vaild_section_completed($section, $course,
+                    $modinfo, $realtiveactivities) == "true") {
                     $sections += 1;
                 }
             }
@@ -675,7 +676,7 @@ class renderer extends \core_courseformat\output\section_renderer {
                 }
             }
 
-            if ($isapplycompletioncourses && $complteioncourses) {
+            if ($isapplycompletioncourses  && $complteioncourses) {
                 foreach ($complteioncourses as $coursecriteria) {
                     $courseid = $coursecriteria->courseinstance;
                     $course = get_course($courseid);
@@ -690,7 +691,6 @@ class renderer extends \core_courseformat\output\section_renderer {
                     }
                 }
             }
-
 
             if (format_designer_has_pro()) {
                 $sectiontooltiplink = '';
@@ -707,8 +707,8 @@ class renderer extends \core_courseformat\output\section_renderer {
                                     ($course->calsectionprogress == DESIGNER_PROGRESS_RELEVANTACTIVITIES) ? true : false;
                             if (\format_designer\options::is_section_completed($section, $course, $modinfo,
                                 true, $realtiveactivities)) {
-                                    $completed += 1;
-                                    $completedcriteria[] = $sectiontooltiplink;
+                                $completed += 1;
+                                $completedcriteria[] = $sectiontooltiplink;
                             } else {
                                 if (\format_designer\options::is_vaild_section_completed($section, $course,
                                     $modinfo, $realtiveactivities) == "true") {
@@ -718,11 +718,10 @@ class renderer extends \core_courseformat\output\section_renderer {
                         }
                     }
                 }
+                $completedcriteria[] = $sectiontooltiplink;
             }
 
-
-
-            $percent = ($completed / $count) * 100;
+            $percent = ($count > 0) ? (($completed / $count) * 100) : 0;
             $completioncriteriahtml = '';
             $uncompletioncriteriahtml = '';
 
@@ -749,7 +748,7 @@ class renderer extends \core_courseformat\output\section_renderer {
                 $uncompletioncriteriahtml .= html_writer::end_div();
             }
 
-            $cachedata =  [
+            $cachedata = [
                 'count' => $count,
                 'completed' => $completed,
                 'percent' => round($percent),
@@ -846,7 +845,7 @@ class renderer extends \core_courseformat\output\section_renderer {
      */
     public function course_type_sectionclasses($course, $section, $modinfo) {
         $attrs = $contentattrs = [];
-        $contentclass = $actvitiyclass = '';
+        $contentclass = $activityclass = '';
         $class = "";
         if ($course->coursetype == DESIGNER_TYPE_COLLAPSIBLE) {
             $attrs[] = 'data-toggle="collapse"';
@@ -866,7 +865,7 @@ class renderer extends \core_courseformat\output\section_renderer {
                 'classes' => $contentclass,
             ],
             'activity' => [
-                'classes' => $actvitiyclass,
+                'classes' => $activityclass,
             ],
         ];
     }
@@ -1149,7 +1148,7 @@ class renderer extends \core_courseformat\output\section_renderer {
                 $modstyle .= sprintf('animation-duration: %ss;', ($duration) ? $duration : '1');
                 $this->flowdelay = $this->flowdelay + 0.5;
             }
-           $modclasses .= isset($course->flowsize) ? $this->get_flow_size($course) : '';
+            $modclasses .= isset($course->flowsize) ? $this->get_flow_size($course) : '';
         }
 
         $ispopupactivities = isset($course->popupactivities) && $course->popupactivities;

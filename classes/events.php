@@ -24,6 +24,8 @@
 
 namespace format_designer;
 
+defined('MOODLE_INTERNAL') || die();
+
 require_once($CFG->dirroot . "/course/format/designer/lib.php");
 
 
@@ -54,7 +56,7 @@ class events {
             return true;
         }
 
-        // course_section_cache_updated.
+        // Course_section_cache_updated.
         self::course_section_cache_updated($courseid, $sectionid);
 
         $format = course_get_format($courseid);
@@ -65,7 +67,8 @@ class events {
                 $sectiondata[$name] = get_config('format_designer', $name);
             }
         }
-        if (!defined('NO_OUTPUT_BUFFERING') || (defined('NO_OUTPUT_BUFFERING') && !NO_OUTPUT_BUFFERING)) {
+        if (!defined('NO_OUTPUT_BUFFERING') || (defined('NO_OUTPUT_BUFFERING') && !NO_OUTPUT_BUFFERING)
+            && (!defined('AJAX_SCRIPT') || AJAX_SCRIPT == '0')) {
             $format->update_section_format_options($sectiondata);
         }
     }
@@ -85,15 +88,22 @@ class events {
         self::course_cache_updated($courseid);
     }
 
+    /**
+     * Update the cache for the course.
+     * @param mixed $event
+     * @return void
+     */
     public static function course_completion_updated($event) {
         $data = $event->get_data();
         $courseid = $data['courseid'];
-        if (course_get_format($courseid)->get_course()->format !== 'designer') {
-            return true;
-        }
         self::course_cache_updated($courseid);
     }
 
+    /**
+     * Update the cache for the course.
+     * @param mixed $event
+     * @return bool
+     */
     public static function course_updated($event) {
         $courseid = $event->courseid;
         if (course_get_format($courseid)->get_course()->format !== 'designer') {
@@ -102,25 +112,41 @@ class events {
         self::course_cache_updated($courseid);
     }
 
+    /**
+     * Update the cache for the course completed.
+     * @param mixed $event
+     * @return void
+     */
     public static function course_completed($event) {
         $userid = $event->relateduserid;
         $courseid = $event->courseid;
-        if (course_get_format($courseid)->get_course()->format !== 'designer') {
-            return true;
-        }
         self::course_user_cache_updated($courseid, $userid);
     }
-
+    /**
+     * Updated the cache for the course.
+     * @param mixed $event
+     * @return void
+     */
     public static function course_module_completion_updated($event) {
+        global $DB;
         $userid = $event->relateduserid;
         $courseid = $event->courseid;
-        if (course_get_format($courseid)->get_course()->format !== 'designer') {
-            return true;
-        }
         self::course_user_cache_updated($courseid, $userid);
+        $records = $DB->get_records('course_completion_criteria', ['courseinstance' => $courseid]);
+        if ($records) {
+            foreach ($records as $record) {
+                if ($record) {
+                    self::course_user_cache_updated($record->course, $userid);
+                }
+            }
+        }
     }
 
-
+    /**
+     * Updated the cache for the course.
+     * @param mixed $event
+     * @return void
+     */
     public static function course_module_created($event) {
         self::course_section_module_cache_updated($event->courseid, $event->objectid);
     }
@@ -144,11 +170,20 @@ class events {
         self::course_section_module_cache_updated($event->courseid, $event->objectid);
     }
 
+    /**
+     * Update the cache when course module updated.
+     * @param mixed $event
+     * @return void
+     */
     public static function course_module_updated($event) {
         self::course_section_module_cache_updated($event->courseid, $event->objectid);
     }
 
-
+    /**
+     * Update the cache when course section deleted.
+     * @param mixed $event
+     * @return void
+     */
     public static function course_section_deleted($event) {
         $data = $event->get_data();
         $sectionid = $data['objectid'];
@@ -156,6 +191,11 @@ class events {
         self::course_section_cache_updated($courseid, $sectionid);
     }
 
+    /**
+     * Update the cache when course section updated.
+     * @param mixed $event
+     * @return void
+     */
     public static function course_section_updated($event) {
         $data = $event->get_data();
         $sectionid = $data['objectid'];
@@ -163,6 +203,11 @@ class events {
         self::course_section_cache_updated($courseid, $sectionid);
     }
 
+    /**
+     * Update the cache when course updated.
+     * @param mixed $courseid
+     * @return void
+     */
     public static function course_cache_updated($courseid) {
         $cache = format_designer_get_cache_object();
         $cache->delete_vaild_section_completed_cache($courseid);
@@ -174,7 +219,12 @@ class events {
         $cache->delete("g_c_s_ic{$courseid}");
     }
 
-
+    /**
+     * Update the cache when section module updated.
+     * @param mixed $courseid
+     * @param mixed $userid
+     * @return void
+     */
     public static function course_user_cache_updated($courseid , $userid) {
         $cache = format_designer_get_cache_object();
         $cache->delete_vaild_section_completed_cache($courseid);
@@ -186,7 +236,13 @@ class events {
         $cache->delete("g_c_s_ic{$courseid}");
     }
 
-
+    /**
+     * Update the cache when section module updated.
+     * @param mixed $courseid
+     * @param mixed $cmid
+     * @param mixed $sectionid
+     * @return bool
+     */
     public static function course_section_module_cache_updated($courseid, $cmid, $sectionid = 0) {
         global $DB;
 
@@ -207,6 +263,12 @@ class events {
         $cache->delete("g_c_s_ic{$courseid}");
     }
 
+    /**
+     * Update the cache when section updated.
+     * @param mixed $courseid
+     * @param mixed $sectionid
+     * @return bool
+     */
     public static function course_section_cache_updated($courseid, $sectionid) {
         if (course_get_format($courseid)->get_course()->format !== 'designer') {
             return true;
